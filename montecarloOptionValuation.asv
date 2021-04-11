@@ -86,7 +86,7 @@ beforeMeanOfMeans = 0;
         sumOfMeans = sumOfMeans + optionPrice;
         
         meanOfMeans = sumOfMeans ./ numOfMeans;
-        fprintf("Option mean value: %f \n", meanOfMeans);
+        fprintf("Option mean value: %f \n", optionPrice);
         if not(numOfMeans == 1)
             %fprintf("diff: %f\n",abs(meanOfMeans - beforeMeanOfMeans))
             if (abs(meanOfMeans - beforeMeanOfMeans) < 0.0001)
