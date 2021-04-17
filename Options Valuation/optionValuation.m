@@ -1,4 +1,4 @@
-function [meanPayoff, times] = meanPayout(exerciceFunction, barrier, payoff, path, stepDatetimeArray, interestRateArray, maturity, stepSize)
+function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, path, stepDatetimeArray, interestRateArray, maturity, stepSize)
     % Initial value of the subyacent:
     S0 = path(1,1);
     
@@ -23,15 +23,13 @@ function [meanPayoff, times] = meanPayout(exerciceFunction, barrier, payoff, pat
     
     stepSizeInYears = computeStepSizeInYears(stepSize);
     
-    times = 0;
-    
     exercice = false(size(actualPayoff));
     
     discountedCashFlow = zeros(size(path));
     
     if size(actualPayoff,2) == 1
         discountFactor = exp(sum(-interestRateArray.*stepSizeInYears, 2)); %dim = 2 as we want to sum each path
-        meanPayoff = mean(payOffValues(:,end).*discountFactor);
+        meanPayoutValue = mean(payOffValues(:,end).*discountFactor);
     else    
         % For each time step and starting from the last one (maturity), this array will hold the cashflows for each
         % path.
@@ -145,7 +143,7 @@ function [meanPayoff, times] = meanPayout(exerciceFunction, barrier, payoff, pat
         end 
         % Compute the mean payoff that will be the mean of the payoff for
         % each path.
-        meanPayoff = sum(discountedCashFlow(discountedCashFlow>0))./size(path,1);
+        meanPayoutValue = sum(discountedCashFlow(discountedCashFlow>0))./size(path,1);
     end
     
 end
@@ -159,7 +157,8 @@ function barrierpayoff = payoffWithBarrier(path, barrier, payoff)
         stepPayoff = payoff(:,i);
         stepBarrier = barrierValues(:,i);
         actualBarrier = max(memBarrier, stepBarrier);
-        stepPayoff = stepPayoff .* (actualBarrier < 0) + (actualBarrier >= 0) .* actualBarrier; 
+        memBarrier = actualBarrier;
+        stepPayoff = (actualBarrier < 0) .* stepPayoff + (actualBarrier >= 0) .* actualBarrier; 
         payoff(:,i) = stepPayoff;
     end  
     barrierpayoff = payoff;

@@ -1,4 +1,4 @@
-function optionPrice = montecarloOptionValuation(exerciceFunction, payoff, barrier, subyacentValue, interestRate, valuationDate, maturity, volatility, stepSize)
+function optionPrice = montecarloOptionValuation(exerciceFunction, payoff, barrier, subyacentValue, interestRate, valuationDate, maturity, volatility, stepSize, numberOfPaths)
 % ---------------------------------------------------------------------------
 % To compute the value of an option we need, the type of option (european, american) 
 % subyacent price, the interest rate, the payoff (this includes the strike), the time to maturity and the volatility.
@@ -51,42 +51,37 @@ function optionPrice = montecarloOptionValuation(exerciceFunction, payoff, barri
 % retun the unitary volatility (if volatility is 20% it has to return 0.2)
 %
 % - stepSize: numbrer of seconds used for each step in the random path
-% generated for montecarlo.
+% generated for montecarlo. or a duration object
+%
+% -numberOfPaths: Optional value to set the number of paths to use
 %
 %---------------------------------------------------------------------------
 sumOfMeans = 0;
 numOfMeans = 0;
-stepSize = seconds(stepSize);
+if class(stepSize)~= "duration"
+    stepSize = seconds(stepSize);
+end
+
+if nargin ~= 10
+    numberOfPaths = 1000; % Default number of paths = 1000
+end
+
 beforeMeanOfMeans = 0;
     while true
-        [path, stepDatetimeArray, interestRateArray] = generatePathUsingGBM(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, 6000); % right 6000
-        %path(end,end) % set volatility = 0 and check that fits formula St = S0 *e^(i*t)
-         %c = path(1,:);
-
-
-        %payoffValue = payoff(path, stepDatetimeArray, maturity);
-
-
-         % Check year volatility
-         %rent = log(c(2:end)./c(1:end-1));
-
-         %dayVol = std(rent);
-
-         %yearVol = dayVol * sqrt(365)
-
-         % ln(S0/Smat) = sum(-r*At)         (propiedad logaritmos) ln(Sa/Sb) + ln(Sb/Sc) = ln(Sa/Sc) 
-
-        %stepSizeInYears = computeStepSizeInYears(stepSize);
-
-        %discountFactor = exp(sum(-interestRateArray.*stepSizeInYears, 2)); %dim = 2 as we want to sum each path
-        %optionPrice = mean(payoffValue(:,end).*discountFactor); % Option price european
-
-        [optionPrice, times] = meanPayout(exerciceFunction, barrier, payoff, path, stepDatetimeArray, interestRateArray, maturity, stepSize);
+        %a = tic;
+        [path, stepDatetimeArray, interestRateArray] = generatePathUsingGBM(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
+        %fprintf("Path generation time: ")
+        %toc(a)
+        %b = tic;
+        optionPrice = optionValuation(exerciceFunction, barrier, payoff, path, stepDatetimeArray, interestRateArray, maturity, stepSize);
+        %fprintf("\nValuation time: ")
+        %toc(b);
         numOfMeans = numOfMeans + 1;
         sumOfMeans = sumOfMeans + optionPrice;
         
         meanOfMeans = sumOfMeans ./ numOfMeans;
         fprintf("Option mean value: %f \n", meanOfMeans);
+        fprintf("Option value: %f \n", optionPrice);
         if not(numOfMeans == 1)
             %fprintf("diff: %f\n",abs(meanOfMeans - beforeMeanOfMeans))
             if (abs(meanOfMeans - beforeMeanOfMeans) < 0.0001)
@@ -97,6 +92,4 @@ beforeMeanOfMeans = 0;
     end
     optionPrice = meanOfMeans;
 end
-
-
 
