@@ -7,7 +7,7 @@ function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, pa
     
     % Modify this payoff with the barrier (if barrier returns always false
     % the payoff will not be modified
-    payOffValuesWithBarrier = payoffWithBarrier(path, barrier, payOffValues);
+    [payOffValuesWithBarrier, presentValueRedemtion] = payoffWithBarrier(path, barrier, payOffValues, interestRateArray, stepSize);
     
     if isequal(payOffValues, payOffValuesWithBarrier)
        %fprintf("No Barrier is executed in any path\n") 
@@ -25,12 +25,17 @@ function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, pa
     
     exercice = false(size(actualPayoff));
     
-    discountedCashFlow = zeros(size(path));
     
     if size(actualPayoff,2) == 1
         discountFactor = exp(sum(-interestRateArray.*stepSizeInYears, 2)); %dim = 2 as we want to sum each path
-        meanPayoutValue = mean(payOffValues(:,end).*discountFactor);
+        
+        payoutValue = max(payOffValues(:,end).*discountFactor, presentValueRedemtion);
+        meanPayoutValue = mean(payoutValue);
     else    
+        % Create a matrix of Discounted cashflows with the same size as
+        % the path matrix
+        discountedCashFlow = zeros(size(path));
+        
         % For each time step and starting from the last one (maturity), this array will hold the cashflows for each
         % path.
         cashflowArray = actualPayoff(:,end);
@@ -43,7 +48,7 @@ function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, pa
         % path the discount factor between two time steps
         discountedCashFlow(:,end) = cashflowArray.* exp(sum(-interest.*stepSizeInYears, 2));
         
-        for i = size(actualPayoff,2):-1:3
+        for i = size(actualPayoff,2):-1:3 % ¿2?
             % We are iterating at t(i) and we are calculating for each path 
             % if at t(i-1) the american option should be exercited.
             
@@ -142,24 +147,56 @@ function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, pa
             discountedCashFlow(discountedCashFlow(:,i-1)>0,i:end) = 0;
         end 
         % Compute the mean payoff that will be the mean of the payoff for
-        % each path.
-        meanPayoutValue = sum(discountedCashFlow(discountedCashFlow>0))./size(path,1);
+        % each path 
+        payoutValue = max(discountedCashFlow, presentValueRedemtion);
+        meanPayoutValue = sum(payoutValue(payoutValue > 0))./size(path,1);
     end
     
 end
 
 
-function barrierpayoff = payoffWithBarrier(path, barrier, payoff)
+function [barrierpayoff, presentValueRedemtion] = payoffWithBarrier(path, barrier, payoff, interestRateMatrix, stepSize)
     barrierValues = barrier(path);
-    memBarrier = ones(size(payoff,1),1).* -1;
+    %memBarrier = ones(size(payoff,1),1).* -1;
+    payoffCoeficient = ones(size(payoff,1),1);
+    presentValueRedemtion = zeros(size(payoff,1),1);
+    
+    stepSizeInYears = years(stepSize);
     
     for i = 1:size(payoff,2)
+        % For a specific time step obtain the payoff values for all the path
         stepPayoff = payoff(:,i);
+        
+        % For a specific time step, obtain the barrier values (-1 if not  or
+        % redemption value if the subyacent surpases a certain value)
         stepBarrier = barrierValues(:,i);
-        actualBarrier = max(memBarrier, stepBarrier);
-        memBarrier = actualBarrier;
-        stepPayoff = (actualBarrier < 0) .* stepPayoff + (actualBarrier >= 0) .* actualBarrier; 
-        payoff(:,i) = stepPayoff;
+        
+        % From Valuation Date to Step Interest rate matrix:
+        stepInterestRate = interestRateMatrix(:,1:i);
+        
+        % Apply the payoffCoeficient of the previous path to the stepBarrier as,
+        % even if some of the paths have suprased the barrier if they have 
+        % been surpased in the past the redemtion for those paths in this step have to be
+        % 0.
+        stepBarrier = stepBarrier .* payoffCoeficient;
+
+        % For the paths that the barrier is supased, the option becomes
+        % desactivated so for that paths the actual payoff will be equal to
+        % the redemtion value and the future payoff will be equal to 0 so:
+        payoffCoeficient(not(stepBarrier == -1)) = 0;
+        
+        % Set the values of the payoff or 0 if barrier have surpased in
+        % this step or in previous steps
+        stepPayoff = stepPayoff .* payoffCoeficient; 
+        
+        % Set the stepPayoff to the payoff matrix:
+        payoff(:,i) =  stepPayoff; 
+        
+        % For the paths that have surpased the barrier in this step compute
+        % the present value of the redemtion given at this point
+        stepInterestRate = stepInterestRate(not(stepBarrier == -1),:);
+        presentValueRedemtion(not(stepBarrier == -1)) = stepBarrier(not(stepBarrier == -1)).* exp(sum(-stepInterestRate.*stepSizeInYears, 2));
+              
     end  
     barrierpayoff = payoff;
 end

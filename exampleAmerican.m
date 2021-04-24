@@ -20,4 +20,4 @@ maturity = datetime(2024,1,1);
 
 stepSize = years(1);
 
-meanPayout(exerciceFunction_, barrier_, payoff_, examplePath, stepDatetimeArray, interestRateArray, maturity, stepSize)
+optionValuation(exerciceFunction_, barrier_, payoff_, examplePath, stepDatetimeArray, interestRateArray, maturity, stepSize)

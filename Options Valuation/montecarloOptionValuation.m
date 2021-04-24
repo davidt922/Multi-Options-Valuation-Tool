@@ -69,7 +69,7 @@ end
 beforeMeanOfMeans = 0;
     while true
         %a = tic;
-        [path, stepDatetimeArray, interestRateArray] = generatePathUsingGBM(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
+        [path, stepDatetimeArray, interestRateArray] = generatePathUsingWienerProcess(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
         %fprintf("Path generation time: ")
         %toc(a)
         %b = tic;

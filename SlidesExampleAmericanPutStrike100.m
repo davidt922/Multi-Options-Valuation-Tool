@@ -1,3 +1,4 @@
+Installation();
 tic
 warning('off','all')
 % American Style option (as stepsize == 1 day everyting ok)
@@ -18,7 +19,7 @@ maturity_ = datetime(2017,01,01);
 
 volatility_ = @(actualDate) ones(size(actualDate)).*0.3; % 0.3
 
-stepSize_ = 86400; % 1 day
+stepSize_ = hours(1); % 1 day
 % ACT/365
 price = montecarloOptionValuation(exerciceFunction_, @payoff_, barrier_, subyacentValue_, interestRate_, valuationDate_, maturity_, volatility_, stepSize_); % valor real 33.155, any normal 33.1529, any bisiesto: 33.1620 Media ponderada 33.155
 

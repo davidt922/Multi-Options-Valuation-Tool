@@ -24,7 +24,7 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
         
         % The first test consist of valuating a Call European option with the following definition:
         % Subyacent value of 100, Strike of 100, maturity 1 year,
-        % Volatility 20%, interest rate 0%
+        % Volatility 20%, interest rate 5%
         function testEuropeanOptionValuation(testCase)
             % Import required functions for testing purposes
             import matlab.unittest.constraints.IsEqualTo;
@@ -36,12 +36,12 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
             % Define the valuation date and the maturity (from
             % stepDatetimeArray)
             valuationDate = datetime(2021,1,1);
-            maturity = datetime(2027,1,1);
+            maturity = datetime(2022,1,1);
             
             
             subyacentValue = 100;
             strikeValue = 100;
-            interestRate = 0;
+            interestRate = 0.05;
             time = years(maturity-valuationDate);
             volatility = 0.2;
             
@@ -63,12 +63,12 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
 
             % Define the step size as 1 day, this will be used to generate
             % the paths
-            stepSize = days(1);
+            stepSize = hours(6);
             %numberOfSteps = 40000;
             %stepSize = (maturity - valuationDate)/numberOfSteps;
             
             % Define the number of paths to use:
-            numberOfPaths = 500;
+            numberOfPaths = 1500;
             
             % Volatility defined as a function. We use the stocastic
             % diferential equation instead of the exact solution of the
@@ -106,7 +106,7 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
             % Define the valuation date and the maturity (from
             % stepDatetimeArray)
             valuationDate = datetime(2021,1,1);
-            maturity = datetime(2027,1,1);
+            maturity = datetime(2022,1,1);
             
             
             subyacentValue = 100;

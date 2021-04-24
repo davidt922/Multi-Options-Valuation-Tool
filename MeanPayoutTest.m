@@ -10,4 +10,4 @@ interestRateArray = [0,0,0,0];
 maturity = datetime(2021, 04, 13);
 stepSize = seconds(86400);
 
-[meanPayoff, times] = meanPayout(exerciceFunction, barrier, payoff, path, stepDatetimeArray, interestRateArray, maturity, stepSize)
+[meanPayoff, times] = optionValuation(exerciceFunction, barrier, payoff, path, stepDatetimeArray, interestRateArray, maturity, stepSize)
