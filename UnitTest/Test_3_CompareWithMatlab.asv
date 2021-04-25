@@ -111,7 +111,7 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
             
             subyacentValue = 100;
             strikeValue = 100;
-            interestRate = 0.00001; % Not 0 as optstocksensbybaw fails
+            interestRate = 0.00001; % Not 0 as 
             %time = years(maturity-valuationDate);
             volatility = 0.2;
             

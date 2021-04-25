@@ -1,6 +1,4 @@
 function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, path, stepDatetimeArray, interestRateArray, maturity, stepSize)
-    % Initial value of the subyacent:
-    S0 = path(1,1);
     
     % Apply payoff function for all path steps
     payOffValues = payoff(path, stepDatetimeArray, maturity);
@@ -89,9 +87,9 @@ function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, pa
             % money that if holoding the option.
             
             % Using the Laguerre polynomials, the regression that we will do is the following:
-            % Vexp = 1 * A + (1-S(t(i-1))/S(0)) * B + 1/2*(2 - 4 * S(t(i-1))/S(0) + (S(t(i-1))/S(0))^2) * C
+            % Vexp = 1 * A + (1-S(t(i-1))) * B + 1/2*(2 - 4 * S(t(i-1)) + (S(t(i-1)))^2) * C
             
-            X1 = Sfiltered./S0;
+            X1 = Sfiltered;
             
             A = [ones(size(X1)), (1-X1), 1/2.*(2-4.*X1 - X1.^2)];
             
