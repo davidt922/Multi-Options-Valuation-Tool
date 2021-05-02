@@ -1,5 +1,5 @@
 % Generate path from a Geometric Brownian Motion
-function [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingGBM(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths)
+function [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingWienerProcess(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths)
 
     numberOfSteps = (maturity - valuationDate)/stepSize; % if step size = 1 day, numberOfSteps = 365 or 366 if year is bisiesto (Converted to Act/365 when using computeStepSizeInYears)
     

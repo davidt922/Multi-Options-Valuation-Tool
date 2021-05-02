@@ -3,7 +3,7 @@
 
 
 %% Test Class Definition
-classdef Test_1_generatePathUsingGBM < matlab.unittest.TestCase
+classdef Test_1_generatePathUsingWienerProcess < matlab.unittest.TestCase
     
     methods(TestMethodSetup)
         function setup(testCase)            
@@ -47,20 +47,20 @@ classdef Test_1_generatePathUsingGBM < matlab.unittest.TestCase
             % Generate only one path
             numberOfPaths = 1;
             
-            [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingGBM(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
+            [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingWienerProcess(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
 
             lastPriceValue = pricePath(1,end);
             expectedValue = subyacentValue*exp(0.05*3652/365); % As we are using ACT/365
-            fprintf("lastPriceValue %f, expectedValue %f\n",lastPriceValue, expectedValue)
+            fprintf("Value of the last generated price of the path %f, expectedValue %f\n",lastPriceValue, expectedValue)
             testCase.verifyThat(lastPriceValue, IsEqualTo(expectedValue, 'Within', RelativeTolerance(reltol)));
             
             % Check for interest rate = 20%
             interestRate = @(actualDate) ones(size(actualDate)) .* 0.20;
-            [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingGBM(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
+            [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingWienerProcess(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
 
             lastPriceValue = pricePath(1,end);
             expectedValue = subyacentValue*exp(0.20*3652/365); % As we are using ACT/365
-            fprintf("lastPriceValue %f, expectedValue %f\n",lastPriceValue, expectedValue)
+            fprintf("Value of the last generated price of the path %f, expectedValue %f\n\n",lastPriceValue, expectedValue)
             testCase.verifyThat(lastPriceValue, IsEqualTo(expectedValue, 'Within', RelativeTolerance(reltol)));
         end
         
@@ -101,7 +101,7 @@ classdef Test_1_generatePathUsingGBM < matlab.unittest.TestCase
             % the paths
             numberOfPaths = 500;
             
-            [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingGBM(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
+            [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingWienerProcess(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
 
             logRentEachPath = log(pricePath(:,2:end)./pricePath(:,1:end-1));
             
@@ -113,14 +113,14 @@ classdef Test_1_generatePathUsingGBM < matlab.unittest.TestCase
             
             meanVolatility = mean(pathsVolatility);
             
-            fprintf("meanVolatility %f, volatility %f\n",meanVolatility, 0.2)
+            fprintf("Mean Volatility of the generated paths: %f, input volatility: %f\n",meanVolatility, 0.2)
             testCase.verifyThat(meanVolatility, IsEqualTo(0.2, 'Within', RelativeTolerance(reltol)));
             
             
             % Second test with 10% volatility:
             volatility = @(actualDate) ones(size(actualDate)) .* 0.10; 
             
-            [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingGBM(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
+            [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingWienerProcess(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
 
             logRentEachPath = log(pricePath(:,2:end)./pricePath(:,1:end-1));
             
@@ -132,7 +132,7 @@ classdef Test_1_generatePathUsingGBM < matlab.unittest.TestCase
             
             meanVolatility = mean(pathsVolatility);
             
-            fprintf("meanVolatility %f, volatility %f\n",meanVolatility, 0.1)
+            fprintf("Mean Volatility of the generated paths: %f, input volatility %f\n",meanVolatility, 0.1)
             testCase.verifyThat(meanVolatility, IsEqualTo(0.1, 'Within', RelativeTolerance(reltol)));   
         end
         
@@ -169,11 +169,11 @@ classdef Test_1_generatePathUsingGBM < matlab.unittest.TestCase
             % the paths
             numberOfPaths = 1;
             
-            [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingGBM(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
+            [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingWienerProcess(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
             
             fprintf("Valuation date %s, first step date %s\n", stepDatetimeArray(1), stepDatetimeArray(2));
             fprintf("Real time step: %s\n", durationString(stepSize));
-            fprintf("Time between steps: %s\n", durationString(stepDatetimeArray(2)- stepDatetimeArray(1)));
+            fprintf("Time between steps: %s\n\n", durationString(stepDatetimeArray(2)- stepDatetimeArray(1)));
             
             % The time between the valuation date and the first step
             % should be equal to 1 step size:
@@ -184,7 +184,7 @@ classdef Test_1_generatePathUsingGBM < matlab.unittest.TestCase
             %---------------------------------------
             stepSize = days(1);
             
-            [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingGBM(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
+            [pricePath, stepDatetimeArray, interestRateArray] = generatePathUsingWienerProcess(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
             
             fprintf("Valuation date %s, first step date %s\n", stepDatetimeArray(1), stepDatetimeArray(2));
             fprintf("Real time step: %s\n", durationString(stepSize));
