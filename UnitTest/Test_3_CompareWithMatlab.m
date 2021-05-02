@@ -118,8 +118,7 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
             
             subyacentValue = 100;
             strikeValue = 100;
-            interestRate = 0.05; % Not 0 as optstocksensbybaw fails
-            %time = years(maturity-valuationDate);
+            interestRate = 0.05; % Not  as optstocksensbybaw fails
             volatility = 0.2;
             
             % American option can be exercisedat any time so:
@@ -135,7 +134,7 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
 
             % Definition of the interest rate function that, for each
             % date and path gives the annual continiously compounded
-            % interest rate. In our case the interest rate is 0% so:
+            % interest rate. In our case the interest rate is 5% so:
             interestRate_ = @(actualDate) ones(size(actualDate)) .* interestRate;
 
             % Define the step size as 1 day, this will be used to generate
@@ -145,7 +144,7 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
             %stepSize = (maturity - valuationDate)/numberOfSteps;
             
             % Define the number of paths to use:
-            numberOfPaths = 1000;
+            numberOfPaths = 1500;
             
             % Volatility defined as a function. We use the stocastic
             % diferential equation instead of the exact solution of the
@@ -284,7 +283,7 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
             strikeValue = 100;
             
             % Define the step size
-            stepSize = minutes(1);
+            stepSize = days(1);
             
             % Define the number of paths to use:
             numberOfPaths = 500;
