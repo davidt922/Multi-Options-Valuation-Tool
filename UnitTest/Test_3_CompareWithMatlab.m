@@ -19,13 +19,14 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
         % all the discounted payouts to find the actual value of the option.
 
         % In this tests we will test the montecarloOptionValuation that joins the
-        % generatePathUsingGBM and the optionValuation functions to valuate
+        % generatePathUsingWienerProcess and the optionValuation functions to valuate
         % any type of options.
         
         % The first test consist of valuating a Call European option with the following definition:
         % Subyacent value of 100, Strike of 100, maturity 1 year,
         % Volatility 20%, interest rate 5%
         function testEuropeanOptionValuation(testCase)
+            tic
             % Import required functions for testing purposes
             import matlab.unittest.constraints.IsEqualTo;
             import matlab.unittest.constraints.RelativeTolerance;
@@ -42,7 +43,6 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
             subyacentValue = 100;
             strikeValue = 100;
             interestRate = 0.05;
-            time = years(maturity-valuationDate);
             volatility = 0.2;
             
             % European Option that can only be exercited at maturity so:
@@ -79,20 +79,27 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
             % In our case for this example we have a constant 20% volatility
             volatility_ = @(actualDate) ones(size(actualDate)).*volatility;
 
-
             optionValue = montecarloOptionValuationAutoPathSize(exerciceFunction_, payoff_, barrier_, subyacentValue, interestRate_, valuationDate, maturity, volatility_, stepSize, numberOfPaths);
-            fprintf("Valuated European Option Value %f\n", optionValue)
             
-            %optionValue = montecarloOptionValuationAutoPaths(exerciceFunction_, payoff_, barrier_, subyacentValue, interestRate_, valuationDate, maturity, volatility_, stepSize);
-            %fprintf("Valuated European Option Value %f\n", optionValue)
             
-            [Call,Put] = blsprice(subyacentValue, strikeValue, interestRate, time,volatility);
+            % Option valuation usingblack-scholes method offered by Matlab 
+            % optstocksensbybls
+            % Define Interest rate object:
+            % Compounding -1: Continiously compounded
+            % Basis 3: ACT/365: (Basis used in our code on the computeStepSizeInYears formula)
+            RateSpec = intenvset('ValuationDate', valuationDate, 'StartDates', valuationDate, 'EndDates',...
+            maturity, 'Rates', interestRate, 'Compounding',-1, 'Basis', 3); 
+        
+            % Define the stock spec:
+            StockSpec = stockspec(volatility, subyacentValue);
+            
+            AnalyticValue = optstocksensbybls(RateSpec, StockSpec, valuationDate, maturity, 'call', strikeValue);
 
-            fprintf("Black-Scholes European Option Value %f\n", Call)
-            fprintf("Valuated European Option Value %f\n", optionValue)
-            fprintf("Error of our Montecarlo Method %f %%\n\n", abs(Call - optionValue)./Call.*100)
-            testCase.verifyThat(optionValue, IsEqualTo(Call, 'Within', RelativeTolerance(reltol)));
-            
+            fprintf("Black-Scholes European Option Value %f\n", AnalyticValue)
+            fprintf("Valuated European Option Value %f\n",optionValue)
+            fprintf("Error of our Montecarlo Method %f %%\n\n", abs(optionValue - AnalyticValue)./AnalyticValue.*100)
+            testCase.verifyThat(optionValue, IsEqualTo(AnalyticValue, 'Within', RelativeTolerance(reltol)));
+            toc
         end
         
         function testAmericanOptionValuation(testCase)
@@ -111,11 +118,11 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
             
             subyacentValue = 100;
             strikeValue = 100;
-            interestRate = 0.00001; % Not 0 as optstocksensbybaw fails
+            interestRate = 0.05; % Not 0 as optstocksensbybaw fails
             %time = years(maturity-valuationDate);
             volatility = 0.2;
             
-            % European Option that can only be exercited at maturity so:
+            % American option can be exercisedat any time so:
             exerciceFunction_ = @(actualDate, maturityDate, stepSize)  true(size(actualDate));
 
             % This option don't have a barrier so:
@@ -133,12 +140,12 @@ classdef Test_3_CompareWithMatlab < matlab.unittest.TestCase
 
             % Define the step size as 1 day, this will be used to generate
             % the paths
-            stepSize = days(1);
+            stepSize = hours(6);% stepSize = days(73);%stepSize = hours(6);
             %numberOfSteps = 40000;
             %stepSize = (maturity - valuationDate)/numberOfSteps;
             
             % Define the number of paths to use:
-            numberOfPaths = 500;
+            numberOfPaths = 1000;
             
             % Volatility defined as a function. We use the stocastic
             % diferential equation instead of the exact solution of the

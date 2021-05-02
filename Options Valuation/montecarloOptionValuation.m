@@ -66,8 +66,12 @@ if nargin ~= 10
     numberOfPaths = 1000; % Default number of paths = 1000
 end
 
+iter = 1;
 beforeMeanOfMeans = 0;
     while true
+        a = tic;
+        fprintf("\nIteration number: %f\n",iter)
+        iter = iter + 1;
         %a = tic;
         [path, stepDatetimeArray, interestRateArray] = generatePathUsingWienerProcess(subyacentValue, interestRate, volatility, stepSize, valuationDate, maturity, numberOfPaths);
         %fprintf("Path generation time: ")
@@ -80,11 +84,11 @@ beforeMeanOfMeans = 0;
         sumOfMeans = sumOfMeans + optionPrice;
         
         meanOfMeans = sumOfMeans ./ numOfMeans;
-        fprintf("Option mean value: %f \n", meanOfMeans);
-        fprintf("Option value: %f \n", optionPrice);
+        fprintf("Option value: %f \n", meanOfMeans);
+        toc(a)
         if not(numOfMeans == 1)
             %fprintf("diff: %f\n",abs(meanOfMeans - beforeMeanOfMeans))
-            if (abs(meanOfMeans - beforeMeanOfMeans) < 0.0001)
+            if (abs(meanOfMeans - beforeMeanOfMeans) < 0.001)
                break; 
             end
             beforeMeanOfMeans = meanOfMeans;

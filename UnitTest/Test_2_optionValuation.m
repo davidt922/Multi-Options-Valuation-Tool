@@ -105,7 +105,7 @@ classdef Test_2_optionValuation < matlab.unittest.TestCase
             testCase.verifyThat(optionValue, IsEqualTo(expectedOptionPrice, 'Within', RelativeTolerance(reltol)));
             
             
-            % Now we will change the subyacent price path and the strike we will
+            % Now we will change the subyacent price path and the strike and we will
             % valuate again:
             path = [100, 78, 110.3, 120, 112, 114, 100;...
                     100, 99, 108.3,109.2,108,  99,  106;...
@@ -226,7 +226,7 @@ classdef Test_2_optionValuation < matlab.unittest.TestCase
             strikeValue = 98;
             payoff_ = @(subyacentPrice, actualDate, maturityDate)  max(subyacentPrice - strikeValue, 0);
             % Using the same barrier, as before the barrier will be crossed
-            % in the last two paths so expectedOptionPrice = 1/4*(2+8+2+2)
+            % in the last two paths so expectedOptionPrice = (2+8+2+2)/4
             % = 3.5
             expectedOptionPrice = 3.5;
            
@@ -366,6 +366,67 @@ classdef Test_2_optionValuation < matlab.unittest.TestCase
             fprintf("Expected Asian Option Value %f\n", expectedOptionPrice)
             fprintf("Valuated Asian Option Value %f\n\n", optionValue)
             testCase.verifyThat(optionValue, IsEqualTo(expectedOptionPrice, 'Within', RelativeTolerance(reltol)));  
+        end
+        
+        % This last test we will check that our valuationOptions function
+        % valuates correctly the american option proposed on the attached
+        % file
+        function testAmericanOption(testCase)
+            
+            % Import required functions for testing purposes
+            import matlab.unittest.constraints.IsEqualTo;
+            import matlab.unittest.constraints.RelativeTolerance;
+
+            % Maximum relative tolerance of 1%
+            reltol = 0.01;
+            
+            % Value of the option proposed on the document attached:
+            expectedOptionPrice = 0.1144;
+            
+            
+            % Prices path proposed on the attached file
+            examplePath = [1, 1.09, 1.08, 1.34;...
+                           1, 1.16, 1.26, 1.54;...
+                           1, 1.22, 1.07, 1.03;...
+                           1, 0.93, 0.97, 0.92;...
+                           1, 1.11, 1.56, 1.52;...
+                           1, 0.76, 0.77, 0.90;...
+                           1, 0.92, 0.84, 1.01;...
+                           1, 0.88, 1.22, 1.34];
+            % The american function can be exerciced at any point in time:
+            exerciceFunction_ = @(actualDate, maturityDate, stepSize)   true(size(actualDate));
+            
+            % There is no barrier for this option
+            barrier_ = @(subyacentPrice) ones(size(subyacentPrice)).*-1;
+
+            % It is a Put option with strike at 1.1
+            payoff_ = @(subyacentPrice, actualDate, maturityDate) max(1.1 - subyacentPrice, 0);
+
+            % As defined in the attached file, the step size is 1 year
+            
+            stepSize = years(1);
+            
+            % We supose that the valuation of that option is done on 1/1/2021
+            % So the step Datetime array is:
+            stepDatetimeArray = [datetime(2021,1,1);...
+                datetime(2022,1,1);...
+                datetime(2023,1,1);...
+                datetime(2024,1,1)];
+            maturity = datetime(2024,1,1);
+            stepDatetimeArray = repmat(stepDatetimeArray',size(examplePath,1),1);
+
+            % As defined, the interest rate is 6% per annum continously
+            % composed so:
+            interestRateArray = ones(size(examplePath)) .*0.06;
+            
+            % We perfom the valuation of the option:
+            optionValue = optionValuation(exerciceFunction_, barrier_, payoff_, examplePath, stepDatetimeArray, interestRateArray, maturity, stepSize);
+            
+            fprintf("Expected American Option Value %f\n", expectedOptionPrice)
+            fprintf("Valuated American Option Value %f\n\n", optionValue)
+            
+            testCase.verifyThat(optionValue, IsEqualTo(expectedOptionPrice, 'Within', RelativeTolerance(reltol)));  
+            
         end
 
 

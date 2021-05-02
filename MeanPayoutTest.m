@@ -1,3 +1,5 @@
+Installation
+
 exerciceFunction = @(actualDate, maturityDate, stepSize)   true(size(actualDate));
 
 barrier = @(subyacentPrice) true(size(subyacentPrice)).*-1;
@@ -10,4 +12,4 @@ interestRateArray = [0,0,0,0];
 maturity = datetime(2021, 04, 13);
 stepSize = seconds(86400);
 
-[meanPayoff, times] = optionValuation(exerciceFunction, barrier, payoff, path, stepDatetimeArray, interestRateArray, maturity, stepSize)
+meanPayoff = optionValuation(exerciceFunction, barrier, payoff, path, stepDatetimeArray, interestRateArray, maturity, stepSize)

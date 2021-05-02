@@ -1,11 +1,11 @@
-function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, path, stepDatetimeArray, interestRateArray, maturity, stepSize)
+function meanPayoutValue = optionValuation(exerciceFunction, barrierFunction, payoffFunction, randomPathMatrix, stepDatetimeMatrix, interestRateMatrix, maturity, stepSize)
     
     % Apply payoff function for all path steps
-    payOffValues = payoff(path, stepDatetimeArray, maturity);
+    payOffValues = payoffFunction(randomPathMatrix, stepDatetimeMatrix, maturity);
     
     % Modify this payoff with the barrier (if barrier returns always false
     % the payoff will not be modified
-    [payOffValuesWithBarrier, presentValueRedemtion] = payoffWithBarrier(path, barrier, payOffValues, interestRateArray, stepSize);
+    [payOffValuesWithBarrier, presentValueRedemtion] = payoffWithBarrier(randomPathMatrix, barrierFunction, payOffValues, interestRateMatrix, stepSize);
     
     if isequal(payOffValues, payOffValuesWithBarrier)
        %fprintf("No Barrier is executed in any path\n") 
@@ -13,26 +13,26 @@ function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, pa
     
     payOffValues = payOffValuesWithBarrier;
     
-    exerciceFilter = exerciceFunction(stepDatetimeArray, maturity, stepSize);
+    exerciceFilter = exerciceFunction(stepDatetimeMatrix, maturity, stepSize);
     
-    datetimeExerciceArray = stepDatetimeArray(:, exerciceFilter(1,:) == true);
-    pathExerciceArray = path(:, exerciceFilter(1,:) == true);
+    datetimeExerciceArray = stepDatetimeMatrix(:, exerciceFilter(1,:) == true);
+    pathExerciceArray = randomPathMatrix(:, exerciceFilter(1,:) == true);
     actualPayoff = payOffValues(:, exerciceFilter(1,:) == true);
     
     stepSizeInYears = computeStepSizeInYears(stepSize);
     
-    exercice = false(size(actualPayoff));
+    %exercice = false(size(actualPayoff));
     
     
     if size(actualPayoff,2) == 1
-        discountFactor = exp(sum(-interestRateArray.*stepSizeInYears, 2)); %dim = 2 as we want to sum each path
+        discountFactor = exp(sum(-interestRateMatrix.*stepSizeInYears, 2)); %dim = 2 as we want to sum each path
         
         payoutValue = max(payOffValues(:,end).*discountFactor, presentValueRedemtion);
         meanPayoutValue = mean(payoutValue);
     else    
         % Create a matrix of Discounted cashflows with the same size as
         % the path matrix
-        discountedCashFlow = zeros(size(path));
+        discountedCashFlow = zeros(size(randomPathMatrix,1),1);
         
         % For each time step and starting from the last one (maturity), this array will hold the cashflows for each
         % path.
@@ -40,11 +40,11 @@ function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, pa
         
         % interest will hold a matrix, each row of the matrix represents a
         % path and each columns represents a time step. 
-        interest = interestRateArray(:, stepDatetimeArray(1,:)>datetimeExerciceArray(1,1));
+        interest = interestRateMatrix(:, stepDatetimeMatrix(1,:)>datetimeExerciceArray(1,1));
         
         % The discounted cashflow is a columns array that have, for each
         % path the discount factor between two time steps
-        discountedCashFlow(:,end) = cashflowArray.* exp(sum(-interest.*stepSizeInYears, 2));
+        discountedCashFlow(:) = cashflowArray.* exp(sum(-interest.*stepSizeInYears, 2));
         
         for i = size(actualPayoff,2):-1:3 % ¿2?
             % We are iterating at t(i) and we are calculating for each path 
@@ -55,19 +55,19 @@ function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, pa
             
             % We calculate the interest between the times t(i-1) and t(i)
             % and its discount factor
-            interestBetweenExercices = interestRateArray(:, stepDatetimeArray(1,:)< datetimeExerciceArray(1,i) & stepDatetimeArray(1,:)>=datetimeExerciceArray(1,i-1));
+            interestBetweenExercices = interestRateMatrix(inTheMoneyTminusOne, stepDatetimeMatrix(1,:)< datetimeExerciceArray(1,i) & stepDatetimeMatrix(1,:)>=datetimeExerciceArray(1,i-1));
             discountFactor = exp(sum(-interestBetweenExercices.*stepSizeInYears, 2));
             
-            % Using the cashflowArray (Possible payoff at t(i), we
+            % Using the actualPayoff(i) (Possible payoff at t(i), we
             % discount in time to calculate this cashflow value at t(i-1) 
-            Vtmp = cashflowArray.*discountFactor;
+            V = actualPayoff(inTheMoneyTminusOne,i).*discountFactor;
             
             % As the target is to calculate if we have to execute or not
             % the option at t-1, we will only check the execution for paths
             % that are in the money at t(i-1), as for the rest we will not execute 
             % as we don't have anything to loose and maybe in the future
             % will enter in the money.
-            V = Vtmp(inTheMoneyTminusOne);
+            %V = Vtmp(inTheMoneyTminusOne);
             
             % For the same filtered paths, we get the subyacent value at
             % t(i-1) as will be used to estimate the conditional
@@ -88,10 +88,10 @@ function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, pa
             
             % Using the Laguerre polynomials, the regression that we will do is the following:
             % Vexp = 1 * A + (1-S(t(i-1))) * B + 1/2*(2 - 4 * S(t(i-1)) + (S(t(i-1)))^2) * C
+                        
+            A = [ones(size(Sfiltered)), (1-Sfiltered), 1/2.*(2-4.*Sfiltered - Sfiltered.^2)];
             
-            X1 = Sfiltered;
-            
-            A = [ones(size(X1)), (1-X1), 1/2.*(2-4.*X1 - X1.^2)];
+            % A = [ones(size(Sfiltered)), Sfiltered, Sfiltered.^2];
             
             x = A\V; % Linear regression (Getting the A,B and C regression coeficients) 
             
@@ -121,33 +121,41 @@ function meanPayoutValue = optionValuation(exerciceFunction, barrier, payoff, pa
             % actualPayoff that the american option give at this point in
             % time is bigger than the expected payoff that the option will
             % offer if we hold it to the next execution step.
-            exercice(:,i) = actualPayoff(:,i-1) > AllVexp; % true means we should exercice as inmediate exercice is better than predicted cashflow
+            
+            
+            payoffAtTMinusOne = actualPayoff(:,i-1);
+            exercice = payoffAtTMinusOne > AllVexp; % true means we should exercice as inmediate exercice is better than predicted cashflow
             
             % For the paths that the option is exerciced, we find its
             % payoff value.
-            pay = exercice(:,i) .* actualPayoff(:,i-1);  
+            pay = exercice .* payoffAtTMinusOne;  
+            
             
             % From here, what we will do is to find the actual value of
             % this payoff:
             % First, we find the interest values from t(i-1) to t = 0
-            interest = interestRateArray(:, stepDatetimeArray(1,:) < datetimeExerciceArray(1,i-1));
+            interest = interestRateMatrix(:, stepDatetimeMatrix(1,:) < datetimeExerciceArray(1,i-1));
             
             % Then in the discountedCashFlow matrix we set the possible payoff (if exist) in this step from
             % this point to t = 0. This matrix have as rows each path and
             % as columns each time step, for each path and starting from
             % the end for a time step t(i-1) we will set the discounted value of the payoff from this point in time to
             % t=0. 
-            discountedCashFlow(:,i-1) = pay.* exp(sum(-interest.*stepSizeInYears, 2));
+            discountedCashflowOfPayoff = pay.* exp(sum(-interest.*stepSizeInYears, 2));
+            
+            discountedCashflowOfPayoff = discountedCashflowOfPayoff(exercice);
+            
+            discountedCashFlow(exercice) = discountedCashflowOfPayoff;
             
             % For a path, if the option is executed at t it cannot be executed at t+1 and beong
             % so from that point in time, we set the further Cashflows (If
             % exist) to 0.
-            discountedCashFlow(discountedCashFlow(:,i-1)>0,i:end) = 0;
+            %discountedCashFlow(discountedCashFlow(:,i-1)>0,i:end) = 0;
         end 
         % Compute the mean payoff that will be the mean of the payoff for
         % each path 
         payoutValue = max(discountedCashFlow, presentValueRedemtion);
-        meanPayoutValue = sum(payoutValue(payoutValue > 0))./size(path,1);
+        meanPayoutValue = mean(payoutValue);
     end
     
 end
@@ -192,8 +200,9 @@ function [barrierpayoff, presentValueRedemtion] = payoffWithBarrier(path, barrie
         
         % For the paths that have surpased the barrier in this step compute
         % the present value of the redemtion given at this point
-        stepInterestRate = stepInterestRate(not(stepBarrier == -1),:);
-        presentValueRedemtion(not(stepBarrier == -1)) = stepBarrier(not(stepBarrier == -1)).* exp(sum(-stepInterestRate.*stepSizeInYears, 2));
+        surpasedInThisStep = barrierValues(:,i);
+        stepInterestRate = stepInterestRate(not(surpasedInThisStep == -1),:);
+        presentValueRedemtion(not(surpasedInThisStep == -1)) = surpasedInThisStep(not(surpasedInThisStep == -1)).* exp(sum(-stepInterestRate.*stepSizeInYears, 2));
               
     end  
     barrierpayoff = payoff;
